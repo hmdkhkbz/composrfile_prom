@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'docker-daemon'
+    static_configs:
+      - targets: ['swarm:9323', 'worker1:9323', 'worker2:9323']
+    # Ensure Docker is started with the '--metrics-addr :9323' option
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['swarm:9100', 'worker1:9100', 'worker2:9100']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['swarm:8080', 'worker1:8080', 'worker2:8080']
+
+  - job_name: 'swarm-exporter'
+    static_configs:
+      - targets: ['swarm:9325']
+

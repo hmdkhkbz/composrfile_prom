@@ -1,0 +1,85 @@
+groups:
+- name: node_alerts
+  rules:
+
+  - alert: HighCPUUsage
+    expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      title: "High CPU usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has been using more than 80% CPU for more than 10 minutes."
+
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes > 0.85
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      title: "High Memory usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has more than 85% memory usage for more than 10 minutes."
+
+  - alert: NodeDown
+    expr: up{job="node-exporter"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: "Node down"
+      description: "{{ $labels.instance }} is down."
+
+- name: docker_daemon_alerts
+  rules:
+
+  - alert: DockerEngineDown
+    expr: up{job="docker-daemon"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: "Docker Engine down on {{ $labels.instance }}"
+      description: "Docker engine on {{ $labels.instance }} is down."
+
+- name: cadvisor_alerts
+  rules:
+
+  - alert: ContainerOOM
+    expr: rate(container_last_seen{job="cadvisor"}[5m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      title: "Container possibly OOM killed"
+      description: "A container has possibly been OOM killed on {{ $labels.instance }}."
+
+  - alert: HighContainerCPU
+    expr: rate(container_cpu_usage_seconds_total{job="cadvisor"}[5m]) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      title: "Container CPU throttle"
+      description: "A container on {{ $labels.instance }} is using too much CPU."
+
+- name: general_alerts
+  rules:
+
+  - alert: DiskSpaceRunningLow
+    expr: (node_filesystem_free_bytes / node_filesystem_size_bytes) < 0.15
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      title: "Low disk space on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 15% free disk space."
+
+  - alert: HostOutOfMemory
+    expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      title: "Low memory on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 10% free memory."
+

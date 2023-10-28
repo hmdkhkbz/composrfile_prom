@@ -1,26 +1,45 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 15s      
+  evaluation_interval: 15s  
+  external_labels:
+    monitor: 'docker-swarm-monitor'
 
 scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
 
-  - job_name: 'docker-daemon'
+  - job_name: 'prometheus'
+    scrape_interval: 5s
     static_configs:
-      - targets: ['swarm:9323', 'worker1:9323', 'worker2:9323']
-    # Ensure Docker is started with the '--metrics-addr :9323' option
+      - targets: ['swarm:9090'] 
 
   - job_name: 'node-exporter'
+    scrape_interval: 15s
     static_configs:
-      - targets: ['swarm:9100', 'worker1:9100', 'worker2:9100']
+      - targets:
+        - 'swarm:9100'
+        - 'worker1:9100'
+        - 'worker2:9100'
 
   - job_name: 'cadvisor'
+    scrape_interval: 15s
     static_configs:
-      - targets: ['swarm:8080', 'worker1:8080', 'worker2:8080']
+      - targets:
+        - 'swarm:8080'
+        - 'worker1:8080'
+        - 'worker2:8080'
 
-  - job_name: 'swarm-exporter'
+  - job_name: 'docker-daemon'
+    scrape_interval: 15s
     static_configs:
-      - targets: ['swarm:9325']
+      - targets:
+        - 'swarm:9323'
+        - 'worker1:9323'
+        - 'worker2:9323'
 
+rule_files:
+   - "alerting_rules.yml"
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - 'swarm:9093'

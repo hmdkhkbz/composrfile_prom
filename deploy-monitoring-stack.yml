@@ -56,11 +56,6 @@ services:
 
   cadvisor:
     image: google/cadvisor:v0.33.0
-    command:
-      - "--docker-only"
-      - "--housekeeping_interval=10s"
-      - "--cgroup_root=/sys/fs/cgroup"
-      - "--container_hints=/etc/cadvisor/container_hints.json"  
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

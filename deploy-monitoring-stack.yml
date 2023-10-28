@@ -28,9 +28,85 @@ services:
           cpus: '2'
           memory: 500M
 
-  # Node Exporter service
   node-exporter:
     image: prom/node-exporter:v1.2.2
     volumes:
       - /proc:/host/proc:ro
-      - /sys:/host/sys
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+    networks:
+      - monitor-net
+    environment:
+      - "TZ=UTC"
+    deploy:
+      mode: global
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '1'
+          memory: 100M
+
+  cadvisor:
+    image: google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - monitor-net
+    environment:
+      - "TZ=UTC"
+    deploy:
+      mode: global
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '1'
+          memory: 150M
+
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    networks:
+      - monitor-net
+    environment:
+      - "TZ=UTC"
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == swarm
+      resources:
+        limits:
+          cpus: '1'
+          memory: 200M
+
+networks:
+  monitor-net:
+    driver: overlay
+
+volumes:
+  prometheus-data:
+    external: true
+  alertmanager-data:
+    external: true

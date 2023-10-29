@@ -1,11 +1,9 @@
 version: '3.7'
 
 services:
-  
+
   prometheus:
     image: prom/prometheus:v2.28.1
-    ports:
-      - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - ./alerting_rules.yml:/etc/prometheus/alerting_rules.yml   
@@ -78,8 +76,6 @@ services:
 
   alertmanager:
     image: prom/alertmanager:v0.23.0
-    ports:
-      - "9093:9093"
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - alertmanager-data:/alertmanager
@@ -101,11 +97,9 @@ services:
         limits:
           cpus: '1'
           memory: 200M
-  
+
   grafana:
     image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana.ini:/etc/grafana/grafana.ini
@@ -113,8 +107,6 @@ services:
       - monitor-net
     environment:
       - "TZ=UTC"
-      - GF_SECURITY_ADMIN_PASSWORD=mysecret
-      - GF_SECURITY_ADMIN_USER=admin
     deploy:
       mode: replicated
       replicas: 1
@@ -122,13 +114,33 @@ services:
         order: start-first
       restart_policy:
         condition: on-failure
-      placement:
-        constraints:
-          - node.hostname == swarm
       resources:
         limits:
           cpus: '1'
           memory: 500M
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/nginx/certs
+    networks:
+      - monitor-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certs:/etc/letsencrypt/live
+      - ./certs-data:/data/letsencrypt
+    command: certonly --webroot --webroot-path=/data/letsencrypt -d prometheus.hmdkh.ir,grafana.hmdkh.ir --email hmdkhkbzz@hmdkh.ir --agree-tos --no-eff-email
 
 networks:
   monitor-net:
@@ -140,4 +152,8 @@ volumes:
   alertmanager-data:
     external: true
   grafana-data:
-    external: false  
+    external: false
+  certs:
+    external: false
+  certs-data:
+    external: false

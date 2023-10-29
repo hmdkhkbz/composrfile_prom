@@ -101,6 +101,34 @@ services:
         limits:
           cpus: '1'
           memory: 200M
+  
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    networks:
+      - monitor-net
+    environment:
+      - "TZ=UTC"
+      - GF_SECURITY_ADMIN_PASSWORD=mysecret
+      - GF_SECURITY_ADMIN_USER=admin
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == swarm
+      resources:
+        limits:
+          cpus: '1'
+          memory: 500M
 
 networks:
   monitor-net:
@@ -111,3 +139,5 @@ volumes:
     external: true
   alertmanager-data:
     external: true
+  grafana-data:
+    external: false  
